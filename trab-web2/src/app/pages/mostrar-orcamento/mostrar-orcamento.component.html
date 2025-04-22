@@ -1,0 +1,54 @@
+<div class="container mt-5" *ngIf="solicitacao">
+  <div class="card">
+    <div class="card-header">
+      <h3>Orçamento</h3>
+    </div>
+    <div class="card-body">
+      <!-- Dados da Solicitação -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">Data/Hora da Solicitação:</label>
+        <span>{{ solicitacao.dataHora | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Equipamento:</label>
+        <span>{{ solicitacao.descricaoEquipamento }}</span>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Categoria do Equipamento:</label>
+        <span>{{ solicitacao.categoriaEquipamento }}</span>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Defeito Informado:</label>
+        <span>{{ solicitacao.descricaoDefeito }}</span>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Estado:</label>
+        <span>{{ solicitacao.estado }}</span>
+      </div>
+      
+      <!-- Orçamento -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">Valor Orçado:</label>
+        <h2 class="text-primary">R$ {{ solicitacao.valorOrcamento | number:'1.2-2' }}</h2>
+      </div>
+      <div class="mb-3" *ngIf="solicitacao.dataHoraOrcamento">
+        <label class="form-label fw-bold">Data/Hora do Orçamento:</label>
+        <span>{{ solicitacao.dataHoraOrcamento | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="mb-3" *ngIf="solicitacao.observacoesOrcamento">
+        <label class="form-label fw-bold">Observações:</label>
+        <p>{{ solicitacao.observacoesOrcamento }}</p>
+      </div>
+      
+      <!-- Ações -->
+      <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-success me-2" (click)="aprovarServico()">
+          Aprovar o Serviço
+        </button>
+        <button type="button" class="btn btn-danger" (click)="rejeitarServico()">
+          Rejeitar o Serviço
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
