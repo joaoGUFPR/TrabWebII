@@ -1,0 +1,85 @@
+{
+  "hash": "143054bc",
+  "configHash": "391d9ebf",
+  "lockfileHash": "cd1b8909",
+  "browserHash": "b36e32e1",
+  "optimized": {
+    "@angular/common": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
+      "file": "@angular_common.js",
+      "fileHash": "a8aa3a18",
+      "needsInterop": false
+    },
+    "@angular/core": {
+      "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
+      "file": "@angular_core.js",
+      "fileHash": "92e7e58a",
+      "needsInterop": false
+    },
+    "@angular/forms": {
+      "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
+      "file": "@angular_forms.js",
+      "fileHash": "195c7812",
+      "needsInterop": false
+    },
+    "@angular/platform-browser": {
+      "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
+      "file": "@angular_platform-browser.js",
+      "fileHash": "6ecd4240",
+      "needsInterop": false
+    },
+    "@angular/router": {
+      "src": "../../../../../../node_modules/@angular/router/fesm2022/router.mjs",
+      "file": "@angular_router.js",
+      "fileHash": "2cb35bce",
+      "needsInterop": false
+    },
+    "jspdf": {
+      "src": "../../../../../../node_modules/jspdf/dist/jspdf.es.min.js",
+      "file": "jspdf.js",
+      "fileHash": "22d83717",
+      "needsInterop": false
+    },
+    "jspdf-autotable": {
+      "src": "../../../../../../node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.mjs",
+      "file": "jspdf-autotable.js",
+      "fileHash": "e59bd95a",
+      "needsInterop": false
+    },
+    "ngx-mask": {
+      "src": "../../../../../../node_modules/ngx-mask/fesm2022/ngx-mask.mjs",
+      "file": "ngx-mask.js",
+      "fileHash": "3e703f41",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "html2canvas.esm-ZNF64ISW": {
+      "file": "html2canvas__esm-ZNF64ISW.js"
+    },
+    "purify.es-4ZNAMFB3": {
+      "file": "purify__es-4ZNAMFB3.js"
+    },
+    "index.es-EUKPFY47": {
+      "file": "index__es-EUKPFY47.js"
+    },
+    "chunk-H2KQP2MJ": {
+      "file": "chunk-H2KQP2MJ.js"
+    },
+    "chunk-TWJCQP7H": {
+      "file": "chunk-TWJCQP7H.js"
+    },
+    "chunk-B276NRE5": {
+      "file": "chunk-B276NRE5.js"
+    },
+    "chunk-WUUVWCMF": {
+      "file": "chunk-WUUVWCMF.js"
+    },
+    "chunk-WD5WAKGO": {
+      "file": "chunk-WD5WAKGO.js"
+    },
+    "chunk-TXDUYLVM": {
+      "file": "chunk-TXDUYLVM.js"
+    }
+  }
+}
