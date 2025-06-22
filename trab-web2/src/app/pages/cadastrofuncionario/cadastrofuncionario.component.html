@@ -41,12 +41,10 @@
     <div class="mb-3">
       <label for="dataNascimento" class="form-label">Data de Nascimento</label>
       <input
-        type="text"
+        type="date"
         id="dataNascimento"
         name="dataNascimento"
         class="form-control"
-        placeholder="DD/MM/AAAA"
-        mask="00/00/0000"
         [(ngModel)]="funcionario.dataNascimento"
         required
         #dnIns="ngModel"
@@ -114,7 +112,7 @@
           id="emailAtualizado"
           name="emailAtualizado"
           class="form-control"
-          [(ngModel)]="emailParaEdicao"
+          [(ngModel)]="funcionarioSelecionado.email"
           required
           #emailUpd="ngModel"
         >
@@ -131,7 +129,7 @@
           id="nomeAtualizado"
           name="nomeAtualizado"
           class="form-control"
-          [(ngModel)]="nomeParaEdicao"
+          [(ngModel)]="funcionarioSelecionado.nome"
           required
           #nomeUpd="ngModel"
         >
@@ -144,13 +142,11 @@
       <div class="mb-3">
         <label for="dataNascimentoAtualizado" class="form-label">Data de Nascimento</label>
         <input
-          type="text"
+          type="date"
           id="dataNascimentoAtualizado"
           name="dataNascimentoAtualizado"
           class="form-control"
-          placeholder="DD/MM/AAAA"
-          mask="00/00/0000"
-          [(ngModel)]="dataNascimentoParaEdicao"
+          [(ngModel)]="funcionarioSelecionado.dataNascimento"
           required
           #dnUpd="ngModel"
         >
@@ -163,11 +159,11 @@
       <div class="mb-3">
         <label for="senhaAtualizado" class="form-label">Senha</label>
         <input
-          type="text"
+          type="password"
           id="senhaAtualizado"
           name="senhaAtualizado"
           class="form-control"
-          [(ngModel)]="senhaParaEdicao"
+          [(ngModel)]="funcionarioSelecionado.senha"
           required
           #senhaUpd="ngModel"
         >

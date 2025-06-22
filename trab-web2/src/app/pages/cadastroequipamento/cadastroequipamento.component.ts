@@ -1,7 +1,7 @@
+// cadastroequipamento.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Equipamento } from '../../shared/models/equipamento';
 import { EquipamentoService } from '../../services/equipamento.service';
-import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarFuncionarioComponent } from "../navbarfuncionario/navbarfuncionario.component";
@@ -9,9 +9,9 @@ import { NavbarFuncionarioComponent } from "../navbarfuncionario/navbarfuncionar
 @Component({
   selector: 'app-cadastroequipamento',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NavbarFuncionarioComponent],
+  imports: [CommonModule, FormsModule, NavbarFuncionarioComponent],
   templateUrl: './cadastroequipamento.component.html',
-  styleUrl: './cadastroequipamento.component.css'
+  styleUrls: ['./cadastroequipamento.component.css']
 })
 export class CadastroequipamentoComponent implements OnInit {
   equipamentos: Equipamento[] = [];
@@ -19,8 +19,8 @@ export class CadastroequipamentoComponent implements OnInit {
   equipamento: Equipamento = new Equipamento('');
   exibirFormAtualizacao = false;
   exibirConfirmacaoRemocao = false;
-  originalCategoria: string = '';     
-  categoriaParaEdicao: string = '';
+  categoriaOriginal = '';
+  categoriaParaEdicao = '';
 
   constructor(private equipamentoService: EquipamentoService) {}
 
@@ -29,43 +29,51 @@ export class CadastroequipamentoComponent implements OnInit {
   }
 
   private refreshList(): void {
-    this.equipamentos = this.equipamentoService.listarTodos();
+    this.equipamentoService.listarTodos().subscribe({
+      next: list => this.equipamentos = list,
+      error: err => console.error('Falha ao listar equipamentos', err)
+    });
   }
 
   inserir(): void {
-    this.equipamentoService.inserir(this.equipamento);
-    alert('Equipamento cadastrado com sucesso');
-    this.equipamento = new Equipamento('');
-    this.refreshList();
+    console.log('inserir() chamado, equipamento =', this.equipamento);
+    this.equipamentoService.inserir(this.equipamento).subscribe({
+      next: res => {
+        if (res) {
+          alert('Equipamento cadastrado com sucesso');
+          this.novo();
+          this.refreshList();
+        }
+      },
+      error: err => console.error('Erro ao inserir equipamento', err)
+    });
   }
 
   selecionar(eq: Equipamento): void {
-    this.equipamentoSelecionado = eq;
+    this.equipamentoSelecionado = { ...eq };
+    this.categoriaOriginal = eq.categoria;
+    this.categoriaParaEdicao = eq.categoria;
     this.exibirFormAtualizacao = false;
     this.exibirConfirmacaoRemocao = false;
   }
 
   abrirAtualizacao(): void {
-    if (this.equipamentoSelecionado) {
-      this.originalCategoria = this.equipamentoSelecionado.categoria;  // salva o valor atual
-      this.categoriaParaEdicao   = this.originalCategoria;
-      this.exibirFormAtualizacao  = true;
-    }
+    this.exibirFormAtualizacao = true;
   }
 
   atualizar(): void {
-    if (this.equipamentoSelecionado) {
-      // atualiza o objeto em memória
-      this.equipamentoSelecionado.categoria = this.categoriaParaEdicao;
-      // passa a categoria antiga para encontrar o índice certo
-      this.equipamentoService.atualizar(
-        this.originalCategoria,
-        this.equipamentoSelecionado
-      );
-      alert('Equipamento atualizado com sucesso');
-      this.novo();
-      this.refreshList();
-    }
+    if (!this.equipamentoSelecionado) return;
+    const updated = new Equipamento(this.categoriaParaEdicao);
+    this.equipamentoService.atualizar(this.categoriaOriginal, updated).subscribe({
+      next: (res) => {
+        if (res) {
+          alert('Equipamento atualizado com sucesso');
+          this.novo();
+          this.refreshList();
+        }
+      },
+      error: err => console.error('Erro ao atualizar equipamento', err)
+    });
   }
 
   abrirRemocao(): void {
@@ -73,12 +81,15 @@ export class CadastroequipamentoComponent implements OnInit {
   }
 
   remover(): void {
-    if (this.equipamentoSelecionado) {
-      this.equipamentoService.remover(this.equipamentoSelecionado.categoria);
-      alert('Equipamento removido com sucesso');
-      this.novo();
-      this.refreshList();
-    }
+    if (!this.equipamentoSelecionado) return;
+    this.equipamentoService.remover(this.equipamentoSelecionado.categoria).subscribe({
+      next: () => {
+        alert('Equipamento removido com sucesso');
+        this.novo();
+        this.refreshList();
+      },
+      error: err => console.error('Erro ao remover equipamento', err)
+    });
   }
 
   novo(): void {

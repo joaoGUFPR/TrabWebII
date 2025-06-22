@@ -1,20 +1,26 @@
+// src/app/pages/mostrar-orcamento/mostrar-orcamento.component.ts
 import { CommonModule } from '@angular/common';
-import { Component, OnInit  } from '@angular/core';
-import { RouterLink, RouterOutlet,  ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { RouterLink, RouterModule, ActivatedRoute, Router } from '@angular/router';
+
 import { Solicitacao } from '../../shared/models/solicitacao';
-import { SolicitacaoService } from '../../services/soliciticao.service';
-import { NavbarComponent } from '../navbar/navbar.component';
 import { Historicosolicitacao } from '../../shared/models/historicosolicitacao';
+import { SolicitacaoService } from '../../services/soliciticao.service';
+import { NavbarComponent }    from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-mostrar-orcamento',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, MostrarOrcamentoComponent, RouterLink, NavbarComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    RouterLink,
+    NavbarComponent
+  ],
   templateUrl: './mostrar-orcamento.component.html',
-  styleUrl: './mostrar-orcamento.component.css'
+  styleUrls: ['./mostrar-orcamento.component.css']
 })
 export class MostrarOrcamentoComponent implements OnInit {
-
   solicitacao!: Solicitacao;
 
   constructor(
@@ -26,40 +32,61 @@ export class MostrarOrcamentoComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const dataHoraParam = params['dataHora'];
-      const solicitacaoOrcada = this.solicitacaoService.buscarSolicitacaoPorDataHora(dataHoraParam);
-      if (solicitacaoOrcada) {
-        this.solicitacao = solicitacaoOrcada;
-      } else {
-        console.error('Solicitação não encontrada!');
-      }
+      this.solicitacaoService.buscarSolicitacaoPorDataHora(dataHoraParam)
+        .subscribe({
+          next: sol => {
+            if (!sol) {
+              console.error('Solicitação não encontrada!');
+              this.router.navigate(['/paginainicialcliente']);
+            } else {
+              this.solicitacao = sol;
+            }
+          },
+          error: err => {
+            console.error('Erro ao buscar solicitação:', err);
+            this.router.navigate(['/paginainicialcliente']);
+          }
+        });
     });
   }
 
-  private atualizarSolicitacao() {
-    const allSolicitacoes = JSON.parse(localStorage.getItem('solicitacoes') || '[]') as Solicitacao[];
-    const index = allSolicitacoes.findIndex(s => new Date(s.dataHora).toISOString() === new Date(this.solicitacao.dataHora).toISOString());
-    if (index !== -1) {
-      allSolicitacoes[index] = this.solicitacao;
-      localStorage.setItem('solicitacoes', JSON.stringify(allSolicitacoes));
-    }
-  }
+aprovarServico(): void {
+  const dh = new Date(this.solicitacao.dataHora).toISOString();
+  this.solicitacaoService
+    .aprovarSolicitacao(
+      dh,
+      this.solicitacao.idFuncionario,
+      this.solicitacao.observacoesOrcamento || ''
+    )
+    .subscribe({
+      next: () => {
+        alert('Serviço aprovado!');
+        this.router.navigate(['/paginainicialcliente']);
+      },
+      error: err => {
+        console.error('Erro ao aprovar:', err);
+        alert('Falha ao aprovar o serviço.');
+      }
+    });
+}
 
-  // Atualiza o atributo 'aprovado' para "Aprovado", atualiza o armazenamento e navega para a página inicial do cliente.
-  aprovarServico(): void {
-    this.solicitacao.estado = 'Aprovada';
-    this.solicitacao.horarioAprovacao = new Date().toISOString()
-    const historico = new Historicosolicitacao(this.solicitacao.horarioAprovacao, this.solicitacao.estado, this.solicitacao.idFuncionario, this.solicitacao.observacoesOrcamento)
-    this.solicitacao.historicoSolicitacao.push(historico)
-    this.atualizarSolicitacao();
-    alert('Serviço Aprovado no Valor R$ '+this.solicitacao.valorOrcamento)
-    this.router.navigate(['paginainicialcliente']);
-  }
-
-  // Atualiza o atributo 'aprovado' para "Rejeitado", atualiza o armazenamento e navega para a página inicial do cliente.
-  rejeitarServico(): void {
-    this.solicitacao.estado = 'Rejeitada';
-    this.atualizarSolicitacao();
-    alert('Serviço Rejeitado ')
-    this.router.navigate(['paginainicialcliente']);
-  }
+rejeitarServico(): void {
+  const dh = new Date(this.solicitacao.dataHora).toISOString();
+  this.solicitacaoService
+    .rejeitarSolicitacao(
+      dh,
+      this.solicitacao.idFuncionario,
+      this.solicitacao.observacoesOrcamento || ''
+    )
+    .subscribe({
+      next: () => {
+        alert('Serviço rejeitado.');
+        this.router.navigate(['/paginainicialcliente']);
+      },
+      error: err => {
+        console.error('Erro ao rejeitar:', err);
+        alert('Falha ao rejeitar o serviço.');
+      }
+    });
+}
 }

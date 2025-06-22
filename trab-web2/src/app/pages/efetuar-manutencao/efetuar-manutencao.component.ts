@@ -1,15 +1,18 @@
+// src/app/pages/efetuar-manutencao/efetuar-manutencao.component.ts
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Solicitacao } from '../../shared/models/solicitacao';
-import { Cliente } from '../../shared/models/cliente';
-import { SolicitacaoService } from '../../services/soliciticao.service';
-import { FuncionarioService } from '../../services/funcionario.service';
-import { ClienteService } from '../../services/cliente.service';
+
+import { Solicitacao }               from '../../shared/models/solicitacao';
+import { Cliente }                   from '../../shared/models/cliente';
+import { Funcionario }               from '../../shared/models/funcionario';
+
+import { SolicitacaoService }        from '../../services/soliciticao.service';
+import { ClienteService }            from '../../services/cliente.service';
+import { FuncionarioService }        from '../../services/funcionario.service';
+
 import { NavbarFuncionarioComponent } from '../navbarfuncionario/navbarfuncionario.component';
-import { Funcionario } from '../../shared/models/funcionario';
-import { Historicosolicitacao } from '../../shared/models/historicosolicitacao';
 
 @Component({
   selector: 'app-efetuar-manutencao',
@@ -24,13 +27,14 @@ import { Historicosolicitacao } from '../../shared/models/historicosolicitacao';
   styleUrls: ['./efetuar-manutencao.component.css']
 })
 export class EfetuarManutencaoComponent implements OnInit {
-  solicitacao!: Solicitacao;
-  cliente!: Cliente;
-  exibirFormularioManutencao: boolean = false;
-  descricaoManutencao: string = '';
-  orientacoesCliente: string = '';
-  destinoFuncionarioId = '';
+  solicitacao?: Solicitacao;
+  cliente?:    Cliente;
   funcionarios: Funcionario[] = [];
+
+  exibirFormularioManutencao = false;
+  descricaoManutencao = '';
+  orientacoesCliente = '';
+  destinoFuncionarioId = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -41,93 +45,94 @@ export class EfetuarManutencaoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Atualizado: captura o parâmetro 'dataHota' da rota
-    const dataHoraParam = this.route.snapshot.paramMap.get('dataHora');
-    if (!dataHoraParam) {
-      this.router.navigate(['/paginainicialfuncionario']);
+    const dataHora = this.route.snapshot.paramMap.get('dataHora');
+    if (!dataHora) {
+      this.router.navigate(['/visualizarsolicitacao']);
       return;
     }
 
-    // Busca a solicitação pela data/hora (formato ISO) usando o parâmetro "dataHota"
-    const solicitacaoEncontrada = this.solicitacaoSvc.buscarSolicitacaoPorDataHora(dataHoraParam);
-    if (!solicitacaoEncontrada) {
-      this.router.navigate(['/paginainicialfuncionario']);
-      return;
-    }
-    this.solicitacao = solicitacaoEncontrada;
+    this.solicitacaoSvc.buscarSolicitacaoPorDataHora(dataHora).subscribe({
+      next: sol => {
+        if (!sol) {
+          this.router.navigate(['/paginainicialfuncionario']);
+          return;
+        }
+        sol.historicoSolicitacao = sol.historicoSolicitacao || [];
+        this.solicitacao = sol;
 
-    this.funcionarios = this.funcSvc.listarTodos().filter(f => f.dataNascimento !== this.solicitacao.idFuncionario);
+        this.clienteSvc.buscarPorcpf(sol.cpfCliente).subscribe({
+          next: cli => this.cliente = cli || undefined,
+          error: _ => this.cliente = undefined
+        });
 
-    // Busca o cliente associado (por CPF) da solicitação e atribui a this.cliente.
-    const clienteEncontrado = this.clienteSvc.buscarPorcpf(this.solicitacao.cpfCliente);
-    if (!clienteEncontrado) {
-      this.router.navigate(['/paginainicialfuncionario']);
-      return;
-    }
-    this.cliente = clienteEncontrado;
+        this.funcSvc.listarTodos().subscribe({
+          next: list => {
+            // comparar dataNascimento, que é a "chave" do funcionário
+            this.funcionarios = list.filter(f =>
+              f.dataNascimento !== sol.idFuncionario
+            );
+          },
+          error: _ => this.funcionarios = []
+        });
+      },
+      error: _ => {
+        this.router.navigate(['/paginainicialfuncionario']);
+      }
+    });
   }
 
-  
-
-  /**
-   * Exibe o formulário para efetuar manutenção.
-   */
   toggleManutencao(): void {
     this.exibirFormularioManutencao = true;
   }
 
-  /**
-   * Registra as informações de manutenção, atualiza o estado da solicitação
-   * para 'ARRUMADA', persiste as alterações e redireciona para a página inicial.
-   */
   confirmarManutencao(): void {
     if (!this.descricaoManutencao.trim() || !this.orientacoesCliente.trim()) {
       alert('Por favor, preencha todos os campos de manutenção.');
       return;
     }
+    if (!this.solicitacao) return;
 
-    // Atualiza os atributos da solicitação relacionados à manutenção
-    this.solicitacao.descricaoManutencao = this.descricaoManutencao;
-    this.solicitacao.orientacaoCliente = this.orientacoesCliente; // Propriedade definida no modelo
-    this.solicitacao.estado = 'Arrumada';
-    this.solicitacao.dataHoraManutencao = new Date().toISOString()
-    const historico = new Historicosolicitacao(this.solicitacao.dataHoraManutencao, this.solicitacao.estado, this.solicitacao.idFuncionario, this.solicitacao.observacoesOrcamento)
-    this.solicitacao.historicoSolicitacao.push(historico)
-    // Atualiza a solicitação via serviço (persistindo no localStorage)
-    this.atualizarSolicitacao();
+    const dto = {
+      descricaoManutencao: this.descricaoManutencao,
+      orientacaoCliente: this.orientacoesCliente,
+      funcionarioId: this.solicitacao.idFuncionario!
+    };
 
-    // Redireciona para a página inicial do funcionário
-    this.router.navigate(['/paginainicialfuncionario']);
+    this.solicitacaoSvc.efetuarManutencao(
+      this.solicitacao.dataHora,
+      dto
+    ).subscribe({
+      next: _ => {
+        // navega sem retornar valor
+        this.router.navigate(['/visualizarsolicitacao']);
+      },
+      error: err => {
+        console.error('Erro ao confirmar manutenção:', err);
+        alert('Erro ao confirmar manutenção. Tente novamente.');
+      }
+    });
   }
 
   redirecionarManutencao(): void {
-    if (!this.destinoFuncionarioId) {
+    if (!this.destinoFuncionarioId || !this.solicitacao) {
       alert('Selecione um funcionário para redirecionar.');
       return;
     }
-    // chama o serviço que já persiste a mudança de idFuncionario e estado
     this.solicitacaoSvc.redirecionarManutencao(
-      new Date(this.solicitacao.dataHora).toISOString(),
+      this.solicitacao.dataHora,
       this.destinoFuncionarioId
-    );
-    this.router.navigate(['/paginainicialfuncionario']);
+    ).subscribe({
+      next: _ => {
+        this.router.navigate(['/visualizarsolicitacao']);
+      },
+      error: err => {
+        console.error('Erro ao redirecionar manutenção:', err);
+        alert('Erro ao redirecionar. Tente novamente.');
+      }
+    });
   }
-
-
-  atualizarSolicitacao(): void {
-    const solicitacoes = this.solicitacaoSvc.recuperarSolicitacoes();
-    const index = solicitacoes.findIndex(
-      s => new Date(s.dataHora).toISOString() === new Date(this.solicitacao.dataHora).toISOString()
-    );
-    if (index !== -1) {
-      solicitacoes[index] = this.solicitacao;
-      localStorage.setItem('solicitacoes', JSON.stringify(solicitacoes));
-    }
-  }
-
-
 
   cancelar(): void {
-    this.router.navigate(['/paginainicialfuncionario']);
+    this.router.navigate(['/visualizarsolicitacao']);
   }
 }

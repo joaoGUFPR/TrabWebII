@@ -1,46 +1,83 @@
-// pages/pagina-inicial-cliente/pagina-inicial-cliente.component.ts
-
+// src/app/pages/pagina-inicial-cliente/pagina-inicial-cliente.component.ts
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
+import { Router, RouterLink, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
 import { Solicitacao } from '../../shared/models/solicitacao';
 import { SolicitacaoService } from '../../services/soliciticao.service';
-import { ClienteService } from '../../services/cliente.service'; 
-import { CommonModule } from '@angular/common';
-import { NavbarComponent } from '../navbar/navbar.component';
+import { ClienteService }      from '../../services/cliente.service';
+import { NavbarComponent }     from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-pagina-inicial-cliente',
+  standalone: true,
+  imports: [CommonModule, NavbarComponent, RouterModule, RouterLink],
   templateUrl: './pagina-inicial-cliente.component.html',
-  styleUrls: ['./pagina-inicial-cliente.component.css'], 
-  imports:[CommonModule, NavbarComponent, RouterLink, RouterModule]
+  styleUrls: ['./pagina-inicial-cliente.component.css']
 })
 export class PaginaInicialClienteComponent implements OnInit {
-  cpf: string = '';
-  solicitacoes: Solicitacao[] = [];
+
+    solicitacoes: Solicitacao[] = [];
 
   constructor(
-    private route: ActivatedRoute,
+    private router: Router,
     private solicitacaoService: SolicitacaoService,
-    private clienteService: ClienteService 
+    private clienteService: ClienteService
   ) {}
 
   ngOnInit(): void {
-    this.cpf = this.clienteService.cpfLogado
-    console.log(this.cpf)
-    this.solicitacoes = this.solicitacaoService.listarSolicitacoesPorCpf(this.cpf);
-    console.log(this.cpf)
-    this.solicitacoes.sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime());
+    // 1) pega o CPF
+
+
+    // 2) carrega do back via HTTP
+    this.solicitacaoService.listarSolicitacoesPorCpf(this.clienteService.cpfLogado).subscribe({
+      next: list => {
+        this.solicitacoes = list.sort((a, b) =>
+          new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
+        );
+      },
+      error: err => {
+        console.error('Erro ao listar solicitações:', err);
+        this.solicitacoes = [];
+      }
+    });
   }
 
-  visualizarSolicitacao(solicitacao: Solicitacao): void {
-    console.log('Visualizar solicitação', solicitacao);
+  /**
+   * Navega para a página de detalhes do orçamento (cliente aprova/rejeita).
+   */
+  visualizarSolicitacao(s: Solicitacao): void {
+    const id = encodeURIComponent(new Date(s.dataHora).toISOString());
+    this.router.navigate(['/mostrar-orcamento', id]);
   }
 
-  acaoSolicitacao(solicitacao: Solicitacao): void {
-    console.log('Ação na solicitação', solicitacao);
+  /**
+   * Se a solicitação já estiver orçada, o cliente pode aprovar ou rejeitar.
+   * Aqui vamos simplesmente navegar também, e depois o próprio MostrarOrcamentoComponent
+   * vai exibir os botões de aprovar/rejeitar.
+   */
+  acaoSolicitacao(s: Solicitacao): void {
+    this.visualizarSolicitacao(s);
   }
-  resgatarServico(solicitacao: Solicitacao) {
-    this.solicitacaoService.resgatarSolicitacao(solicitacao.dataHora, solicitacao.valorOrcamento,solicitacao.observacoesOrcamento, solicitacao.idFuncionario)
-    solicitacao.estado = "Aprovada"
-  }
+
+
+resgatarServico(s: Solicitacao): void {
+  // transforma pra ISO, sem encodeURIComponent
+  const dataHora = new Date(s.dataHora).toISOString();
+
+  this.solicitacaoService
+    .resgatarSolicitacao(
+      dataHora,                          // 1) dataHora
+      this.clienteService.cpfLogado,     // 2) funcionarioId (ou aqui o id do cliente, conforme seu back espera)
+      s.observacoesOrcamento || ''       // 3) observações
+    )
+    .subscribe({
+      next: updated => {
+        if (updated) {
+          s.estado = 'Aprovada';
+        }
+      },
+      error: err => console.error('Erro ao resgatar serviço', err)
+    });
+}
 }

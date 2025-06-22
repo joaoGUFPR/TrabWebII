@@ -3,12 +3,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterModule } from '@angular/router';
+
 import { NavbarFuncionarioComponent } from '../navbarfuncionario/navbarfuncionario.component';
-import { SolicitacaoService } from '../../services/soliciticao.service';
-import { ClienteService } from '../../services/cliente.service';
-import { FuncionarioService } from '../../services/funcionario.service';
+import { SolicitacaoService }    from '../../services/soliciticao.service';
+import { ClienteService }        from '../../services/cliente.service';
+import { FuncionarioService }    from '../../services/funcionario.service';
+
 import { Solicitacao } from '../../shared/models/solicitacao';
-import { Cliente } from '../../shared/models/cliente';
+import { Cliente }     from '../../shared/models/cliente';
 
 @Component({
   selector: 'app-efetuar-orcamento',
@@ -38,34 +40,49 @@ export class EfetuarOrcamentoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // 1) Captura o parâmetro 'dataHora' da rota; se não houver, redireciona.
     const dataHoraParam = this.route.snapshot.paramMap.get('dataHora');
     if (!dataHoraParam) {
       this.router.navigate(['/paginainicialfuncionario']);
       return;
     }
 
-    // 2) Busca a solicitação pela data/hora (no formato ISO) e atribui a this.solicitacao.
-    const solicitacaoEncontrada = this.solicitacaoSvc.buscarSolicitacaoPorDataHora(dataHoraParam);
-    if (!solicitacaoEncontrada) {
-      // Se não encontrar a solicitação, redireciona.
-      this.router.navigate(['/paginainicialfuncionario']);
-      return;
-    }
-    this.solicitacao = solicitacaoEncontrada;
+    // Busca a solicitação de forma assíncrona
+    this.solicitacaoSvc.buscarSolicitacaoPorDataHora(dataHoraParam)
+      .subscribe({
+        next: sol => {
+          if (!sol) {
+            this.router.navigate(['/paginainicialfuncionario']);
+            return;
+          }
+          this.solicitacao = sol;
+          // Busca o cliente
+          this.clienteSvc.buscarPorcpf(sol.cpfCliente)
+            .subscribe({
+              next: c => {
+                if (!c) {
+                  this.router.navigate(['/paginainicialfuncionario']);
+                  return;
+                }
+                this.cliente = c;
+                this.initForm();
+              },
+              error: err => {
+                console.error('Erro ao buscar cliente:', err);
+                this.router.navigate(['/paginainicialfuncionario']);
+              }
+            });
+        },
+        error: err => {
+          console.error('Erro ao buscar solicitação:', err);
+          this.router.navigate(['/paginainicialfuncionario']);
+        }
+      });
+  }
 
-    // 3) Busca o cliente associado ao CPF da solicitação e atribui a this.cliente.
-    const clienteEncontrado = this.clienteSvc.buscarPorcpf(this.solicitacao.cpfCliente);
-    if (!clienteEncontrado) {
-      this.router.navigate(['/paginainicialfuncionario']);
-      return;
-    }
-    this.cliente = clienteEncontrado;
-
-    // 4) Inicializa o formulário (mesmo se, por enquanto, a preocupação seja carregar os dados)
+  private initForm(): void {
     this.form = this.fb.group({
-      valor: [null, [Validators.required, Validators.min(0.01)]],
-      observacoes: ['']
+      valor:      [null, [Validators.required, Validators.min(0.01)]],
+      observacoes:[ '' ]
     });
   }
 
@@ -76,33 +93,30 @@ export class EfetuarOrcamentoComponent implements OnInit {
     }
 
     const { valor, observacoes } = this.form.value;
-    const funcionarioId = this.funcSvc.idLogado;
-    console.log(funcionarioId)
-    const agora = new Date();
-    const dataHoraString = agora.toISOString(); 
-    // Atualiza os atributos relacionados ao orçamento na solicitação
-    this.solicitacao.valorOrcamento = valor;
+    const funcionarioId = this.funcSvc.dataNascimentoLogado;
+
+    // Prepara atualização
+    this.solicitacao.valorOrcamento       = valor;
     this.solicitacao.observacoesOrcamento = observacoes;
-    this.solicitacao.dataHoraOrcamento = dataHoraString;
-    this.solicitacao.idFuncionario = funcionarioId;
-    this.solicitacao.estado = 'Orçada';
+    this.solicitacao.dataHoraOrcamento    = new Date().toISOString();
+    this.solicitacao.idFuncionario        = funcionarioId;
+    this.solicitacao.estado               = 'Orçada';
 
-    // Obtém a data/hora da solicitação em formato ISO para identificar o registro a ser atualizado.
-    const dataHoraIdentificador = new Date(this.solicitacao.dataHora).toISOString();
-
-    // Registra o orçamento (persistindo as alterações via serviço)
+    // Persiste via serviço e espera callback
     this.solicitacaoSvc.registrarOrcamento(
-      dataHoraIdentificador,
+      this.solicitacao.dataHora,
       valor,
       observacoes,
       funcionarioId
-    );
-
-    // Redireciona de volta para a página inicial do funcionário
-    this.router.navigate(['/paginainicialfuncionario']);
+    ).subscribe({
+      next: () => this.router.navigate(['/paginainicialfuncionario']),
+      error: err => {
+        console.error('Erro ao registrar orçamento:', err);
+        alert('Falha ao salvar orçamento. Tente novamente.');
+      }
+    });
   }
 
-  // O método 'salvar' e outros podem ser implementados posteriormente.
   cancelar(): void {
     this.router.navigate(['/paginainicialfuncionario']);
   }

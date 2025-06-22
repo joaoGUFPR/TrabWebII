@@ -1,13 +1,20 @@
 <!-- src/app/pages/pagina-inicial-funcionario/pagina-inicial-funcionario.component.html -->
 <app-navbarfuncionario></app-navbarfuncionario>
+
 <div class="container mt-5">
   <h2 class="mb-4">Solicitações Abertas</h2>
-  <table class="table table-striped">
+
+  <div *ngIf="carregando" class="text-center">
+    <div class="spinner-border" role="status"></div>
+  </div>
+  <div *ngIf="erro" class="alert alert-danger">{{ erro }}</div>
+
+  <table *ngIf="!carregando && !erro" class="table table-striped">
     <thead>
       <tr>
-        <th>Data/Hora da Abertura</th>
-        <th>Nome do Cliente</th>
-        <th>Produto</th>
+        <th>Abertura</th>
+        <th>Cliente</th>
+        <th>Equipamento</th>
         <th>Ação</th>
       </tr>
     </thead>
@@ -19,7 +26,7 @@
         <td>
           <button
             class="btn btn-primary btn-sm"
-            [routerLink]="['/orcamento', s.dataHora, s.idFuncionario]"
+            (click)="irParaOrcamento(s)"
           >
             Efetuar Orçamento
           </button>
@@ -27,4 +34,8 @@
       </tr>
     </tbody>
   </table>
+
+  <div *ngIf="!carregando && !erro && solicitacoes.length === 0" class="alert alert-info">
+    Nenhuma solicitação em aberto.
+  </div>
 </div>

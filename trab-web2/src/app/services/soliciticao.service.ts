@@ -1,163 +1,228 @@
 import { Injectable } from '@angular/core';
 import { Solicitacao } from '../shared/models/solicitacao';
 import { Historicosolicitacao } from '../shared/models/historicosolicitacao';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { Observable, of, throwError, map as rxMap } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { FuncionarioService } from './funcionario.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SolicitacaoService {
-  private readonly STORAGE_KEY = 'solicitacoes';
+  private readonly BASE = 'http://localhost:8080/solicitacoes';
+  private readonly STORAGE_KEY = 'solicitacoes';  // agora só para compatibilidade, não usado
+  private httpOpts = {
+    observe: 'response' as const,
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  };
 
-  constructor() {
-    if (!localStorage.getItem(this.STORAGE_KEY)) {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify([]));
-    }
+  constructor(private http: HttpClient,     private funcionarioService: FuncionarioService ) {}
+
+  listarTodos(): Observable<Solicitacao[]> {
+    return this.http.get<Solicitacao[]>(this.BASE, this.httpOpts).pipe(
+      map(r => r.status === 200 ? r.body || [] : []),
+      catchError(err => err.status === 404 ? of([]) : throwError(() => err))
+    );
   }
 
   recuperarSolicitacoes(): Solicitacao[] {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    return data ? JSON.parse(data) as Solicitacao[] : [];
+    // permanece para compatibilidade, mas delega ao HTTP síncrono:
+    let result: Solicitacao[] = [];
+    this.listarTodos().subscribe(list => result = list, () => result = []);
+    return result;
   }
 
-  private salvarSolicitacoes(solicitacoes: Solicitacao[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(solicitacoes));
+  private salvarSolicitacoes(_: Solicitacao[]): void {
+    // não faz nada, só para manter o método
   }
 
-  listarSolicitacoesPorCpf(cpf: string): Solicitacao[] {
-    return this.recuperarSolicitacoes()
-      .filter(s => s.cpfCliente === cpf);
+listarSolicitacoesPorCpf(cpf: string): Observable<Solicitacao[]> {
+  return this.http
+    .get<Solicitacao[]>(
+      `${this.BASE}/cliente/${encodeURIComponent(cpf)}`,
+      this.httpOpts
+    )
+    .pipe(
+      map(r => (r.status === 200 ? r.body || [] : [])),
+      catchError(() => of([]))
+    );
+}
+
+  listarSolicitacoesPorId(id: string): Observable<Solicitacao[]> {
+    return this.http.get<Solicitacao[]>(`${this.BASE}?funcionarioId=${encodeURIComponent(id)}`, this.httpOpts).pipe(
+      map(r => r.status === 200 ? r.body || [] : []),
+      catchError(() => of([]))
+    );
   }
 
-  listarSolicitacoesPorId(id: string): Solicitacao[] {
-    return this.recuperarSolicitacoes()
-      .filter(s => s.idFuncionario === id);
-  }
-
-  listarSolicitacoesPorEstado(estado: string): Solicitacao[] {
-    return this.recuperarSolicitacoes()
-      .filter(s => s.estado === estado);
+  listarSolicitacoesPorEstado(estado: string): Observable<Solicitacao[]> {
+    return this.http.get<Solicitacao[]>(`${this.BASE}?estado=${encodeURIComponent(estado)}`, this.httpOpts).pipe(
+      map(r => r.status === 200 ? r.body || [] : []),
+      catchError(() => of([]))
+    );
   }
 
   adicionarSolicitacao(solicitacao: Solicitacao): void {
-    const lista = this.recuperarSolicitacoes();
-    lista.push(solicitacao);
-    this.salvarSolicitacoes(lista);
+    // dispara o POST mas não espera retorno
+    this.http.post<Solicitacao>(this.BASE, JSON.stringify(solicitacao), this.httpOpts)
+      .subscribe({ next: () => {}, error: () => {} });
   }
 
-  buscarSolicitacaoPorDataHora(dataHoraParam: string): Solicitacao | undefined {
-    return this.recuperarSolicitacoes()
-      .find(s => new Date(s.dataHora).toISOString() === dataHoraParam);
+  buscarSolicitacaoPorDataHora(dataHora: string): Observable<Solicitacao | null> {
+    return this.http.get<Solicitacao>(`${this.BASE}/${dataHora}`, this.httpOpts).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(err => err.status === 404 ? of(null) : throwError(() => err))
+    );
   }
 
   registrarOrcamento(
-    dataHoraParam: string,
+    dataHora: string,
     valor: number,
     observacoes: string,
     funcionarioId: string
-  ): void {
-    const agora = new Date().toISOString();
-    const lista = this.recuperarSolicitacoes();
-    const idx = lista.findIndex(s => new Date(s.dataHora).toISOString() === dataHoraParam);
-    if (idx === -1) return;
-
-    const s = lista[idx];
-    s.valorOrcamento = valor;
-    s.observacoesOrcamento = observacoes;
-    s.dataHoraOrcamento = agora;
-    s.idFuncionario = funcionarioId;
-    s.estado = 'Orçada';
-
-    s.historicoSolicitacao.push(
-      new Historicosolicitacao(agora, 'Orçada', s.idFuncionario, 'Solicitação orçada')
+  ): Observable<Solicitacao | null> {
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/orcamento`,
+      JSON.stringify({ valor, observacoes, funcionarioId }),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(err => throwError(() => err))
     );
-
-    this.salvarSolicitacoes(lista);
   }
 
   registrarPagamento(
-    dataHoraParam: string,
-    valor: number,
+    dataHora: string,
     observacoes: string,
     funcionarioId: string
-  ): void {
-    const lista = this.recuperarSolicitacoes();
-    const idx = lista.findIndex(s => new Date(s.dataHora).toISOString() === dataHoraParam);
-    if (idx === -1) return;
-
-    const s = lista[idx];
-    const agora = new Date().toISOString();
-    s.estado = 'Paga';
-    s.dataHoraPagamento = agora;
-    s.historicoSolicitacao.push(
-      new Historicosolicitacao(agora, 'Paga', funcionarioId, observacoes)
+  ): Observable<Solicitacao | null> {
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/pagamento`,
+      JSON.stringify({ observacoes, funcionarioId }),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(err => throwError(() => err))
     );
-
-    this.salvarSolicitacoes(lista);
   }
 
   resgatarSolicitacao(
-    dataHoraParam: string,
-    valor: number,
-    observacoes: string,
-    funcionarioId: string
-  ): void {
-    const lista = this.recuperarSolicitacoes();
-    const idx = lista.findIndex(s => new Date(s.dataHora).toISOString() === dataHoraParam);
-    if (idx === -1) return;
-
-    const s = lista[idx];
-    s.estado = 'Aprovada';
-    s.horarioAprovacao = new Date().toISOString();
-    s.historicoSolicitacao.push(
-      new Historicosolicitacao(s.horarioAprovacao!, 'Aprovada', funcionarioId, observacoes)
+    dataHora: string,
+    funcionarioId: string,
+    observacoes: string
+  ): Observable<Solicitacao | null> {
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/resgatar`,
+      JSON.stringify({ funcionarioId, observacoes }),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(() => of(null))
     );
+  }
 
-    this.salvarSolicitacoes(lista);
+  efetuarManutencao(
+    dataHora: string,
+    dto: { descricaoManutencao: string; orientacaoCliente: string; funcionarioId: string; }
+  ): Observable<Solicitacao> {
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/manutencao`,
+      JSON.stringify(dto),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body! : null!),
+      catchError(err => throwError(() => err))
+    );
   }
 
   redirecionarManutencao(
-    dataHoraParam: string,
-    novoIdFuncionario: string
-  ): void {
-    const lista = this.recuperarSolicitacoes();
-    const idx = lista.findIndex(s => new Date(s.dataHora).toISOString() === dataHoraParam);
-    if (idx === -1) {
-      throw new Error('Solicitação não encontrada.');
-    }
-
-    const s = lista[idx];
-    const agora = new Date().toISOString();
-    s.idFuncionario = novoIdFuncionario;
-    s.estado = 'Redirecionada';
-    s.dataHoraRedirecionada = agora;
-    s.historicoSolicitacao.push(
-      new Historicosolicitacao(agora, 'Redirecionada', novoIdFuncionario, s.observacoesOrcamento || '')
+    dataHora: string,
+    novoFuncionarioId: string
+  ): Observable<Solicitacao | null> {
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/redirecionar`,
+      JSON.stringify({ novoFuncionarioId }),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(err => throwError(() => err))
     );
-
-    this.salvarSolicitacoes(lista);
   }
 
-  finalizarSolicitacao(
-    dataHoraParam: string,
+ finalizarSolicitacao(
+    dataHora: string,
     valor: number,
     observacoes: string,
     funcionarioId: string
-  ): void {
-    const lista = this.recuperarSolicitacoes();
-    const idx = lista.findIndex(s => new Date(s.dataHora).toISOString() === dataHoraParam);
-    if (idx === -1) return;
-
-    const s = lista[idx];
-    const agora = new Date().toISOString();
-    s.estado = 'Finalizada';
-    s.dataHoraFinalizada = agora;
-    s.historicoSolicitacao.push(
-      new Historicosolicitacao(agora, 'Finalizada', funcionarioId, observacoes)
+  ): Observable<Solicitacao | null> {
+    const body = { valor, observacoes, funcionarioId };
+    return this.http.post<Solicitacao>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/finalizar`,
+      JSON.stringify(body),
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body : null),
+      catchError(err => throwError(() => err))
     );
-
-    this.salvarSolicitacoes(lista);
   }
+
+
+adicionarHistorico(
+  dataHora: string,
+  payload: { tipoEvento: string; funcionarioId: string; observacoes: string; }
+): Observable<Historicosolicitacao | null> {
+  return this.http.post<Historicosolicitacao>(
+    `${this.BASE}/${encodeURIComponent(dataHora)}/historico`,
+    JSON.stringify(payload),
+    this.httpOpts
+  ).pipe(
+    map(r => r.status === 200 ? r.body : null),
+    catchError(err => throwError(() => err))
+  );
+}
+
+
+// dentro de SolicitacaoService
+  listarHistorico(dataHora: string): Observable<Historicosolicitacao[]> {
+    return this.http.get<Historicosolicitacao[]>(
+      `${this.BASE}/${encodeURIComponent(dataHora)}/historico`,
+      this.httpOpts
+    ).pipe(
+      map(r => r.status === 200 ? r.body || [] : []),
+      catchError(err => err.status === 404 ? of([]) : throwError(() => err))
+    );
+  }
+
+  aprovarSolicitacao(
+  dataHora: string,
+  funcionarioId: string,
+  observacoes: string
+): Observable<Solicitacao|null> {
+  return this.http.post<Solicitacao>(
+    `${this.BASE}/${encodeURIComponent(dataHora)}/aprovar`,
+    JSON.stringify({ funcionarioId, observacoes }),
+    this.httpOpts
+  ).pipe(
+    map(r => r.status === 200 ? r.body : null),
+    catchError(err => throwError(() => err))
+  );
+}
+
+rejeitarSolicitacao(
+  dataHora: string,
+  funcionarioId: string,
+  observacoes: string
+): Observable<Solicitacao|null> {
+  return this.http.post<Solicitacao>(
+    `${this.BASE}/${encodeURIComponent(dataHora)}/rejeitar`,
+    JSON.stringify({ funcionarioId, observacoes }),
+    this.httpOpts
+  ).pipe(
+    map(r => r.status === 200 ? r.body : null),
+    catchError(err => throwError(() => err))
+  );
+}
 
   /**
    * RF013 – Visualização de solicitações:
@@ -165,44 +230,48 @@ export class SolicitacaoService {
    * ∘ ordena por data/hora crescente
    * ∘ só inclui REDIRECIONADA se for para este funcionário
    */
-  listarParaVisualizacao(
-    funcionarioId: string,
-    filtroTipo: 'hoje' | 'periodo' | 'todas',
-    dataInicio?: string,
-    dataFim?: string
-  ): Solicitacao[] {
-    let list = this.recuperarSolicitacoes();
-    const hoje = new Date();
+listarParaVisualizacao(
+  filtroTipo: 'hoje' | 'periodo' | 'todas',
+  dataInicio?: string,
+  dataFim?: string,
+  todas: Solicitacao[] = []
+): Solicitacao[] {
+  const idLogado = this.funcionarioService.idLogado; // ex: "2000-05-08"
+  let list = [...todas];
+  const hoje = new Date();
 
-    // filtrar por data
-    if (filtroTipo === 'hoje') {
-      list = list.filter(s => {
-        const d = new Date(s.dataHora);
-        return d.getFullYear() === hoje.getFullYear()
-            && d.getMonth()    === hoje.getMonth()
-            && d.getDate()     === hoje.getDate();
-      });
-    } else if (filtroTipo === 'periodo' && dataInicio && dataFim) {
-      const inicio = new Date(dataInicio);
-      const fim    = new Date(dataFim);
-      list = list.filter(s => {
-        const d = new Date(s.dataHora);
-        return d >= inicio && d <= fim;
-      });
-    }
-    // filtroTipo === 'todas' → não altera
-
-    // aplicar regra RF013
-    list = list.filter(s =>
-      s.estado !== 'Redirecionada'
-      || s.idFuncionario === funcionarioId
-    );
-
-    // ordenar por data/hora crescente
-    list.sort((a, b) =>
-      new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
-    );
-
-    return list;
+  // 1) filtra por data (se aplicável)
+  if (filtroTipo === 'hoje') {
+    list = list.filter(s => {
+      const d = new Date(s.dataHora);
+      return d.getFullYear() === hoje.getFullYear()
+          && d.getMonth()    === hoje.getMonth()
+          && d.getDate()     === hoje.getDate();
+    });
+  } else if (filtroTipo === 'periodo' && dataInicio && dataFim) {
+    const inicio = new Date(`${dataInicio}T00:00:00`);
+    const fim    = new Date(`${dataFim}T23:59:59.999`);
+    list = list.filter(s => {
+      const d = new Date(s.dataHora);
+      return d >= inicio && d <= fim;
+    });
   }
+  // se 'todas', não tocamos list
+
+  // 2) manter **sempre** as “abertas” (não têm idFuncionario)
+  //    e **só** entregar as demais a quem foi atribuído
+  list = list.filter(s => {
+    // se não houve atribuição, mostra para todo mundo
+    if (!s.idFuncionario) {
+      return true;
+    }
+    // senão, só mostra para quem é o dono
+    return String(s.idFuncionario) === idLogado;
+  });
+
+  // 3) ordena e retorna
+  return list.sort((a, b) =>
+    new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime()
+  );
+}
 }

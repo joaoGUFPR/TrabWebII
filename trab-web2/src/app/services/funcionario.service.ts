@@ -1,53 +1,95 @@
 import { Injectable } from '@angular/core';
 import { Funcionario } from '../shared/models/funcionario';
 import { Solicitacao } from '../shared/models/solicitacao';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 const LS_CHAVE = "funcionarios";
 @Injectable({
   providedIn: 'root'
 })
 export class FuncionarioService {
+
+  private readonly BASE_URL = 'http://localhost:8080';
+  private httpOptions = {
+    observe: 'response' as const,
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  };
+
   private funcionarios: Funcionario[] = []; 
   private dataNascimento: string =''
   public idLogado: string = '';
+   private _dataNascimentoLogado = '';
+  set dataNascimentoLogado(dn: string) { this._dataNascimentoLogado = dn; }
+  get dataNascimentoLogado(): string { return this._dataNascimentoLogado; }
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
-  set dataNascimentoLogado(dataNascimento: string) {
-    this.idLogado = dataNascimento;
+
+
+  listarTodos(): Observable<Funcionario[]> {
+    return this.http.get<Funcionario[]>(
+      `${this.BASE_URL}/funcionarios`,
+      this.httpOptions
+    ).pipe(
+      map((resp: HttpResponse<Funcionario[]>) => resp.status === 200 ? resp.body || [] : []),
+      catchError(err => err.status === 404 ? of([]) : throwError(() => err))
+    );
+  }
+  
+ getFuncionarios(email: string, senha: string): Observable<Funcionario | null> {
+    const body = { login: email, senha };
+    return this.http.post<Funcionario>(
+      `${this.BASE_URL}/login`,
+      JSON.stringify(body),
+      this.httpOptions
+    ).pipe(
+      map((resp: HttpResponse<Funcionario>) => resp.status === 200 ? resp.body : null),
+      catchError(err => err.status === 401 ? of(null) : throwError(() => err))
+    );
   }
 
+  inserir(func: Funcionario): Observable<Funcionario | null> {
+    return this.http.post<Funcionario>(
+      `${this.BASE_URL}/funcionarios`,
+      JSON.stringify(func),
+      this.httpOptions
+    ).pipe(
+      map((resp: HttpResponse<Funcionario>) => resp.status === 200 ? resp.body : null),
+      catchError(err => throwError(() => err))
+    );
+  }
 
-  listarTodos(): Funcionario[] {
-      const funcionarios = localStorage.getItem(LS_CHAVE);
-      return funcionarios ? JSON.parse(funcionarios) : [];
-    }
-  
-    getFuncionario(email: string, senha: string): Funcionario | undefined {
-      this.funcionarios = this.listarTodos();
-      const funcionario = this.funcionarios.find(c => c.email === email && c.senha === senha);
-  
-      return funcionario;
-    }
+  remover(dataNascimento: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.BASE_URL}/funcionarios/${dataNascimento}`,
+      this.httpOptions
+    ).pipe(
+      // map to void explicitly
+      map(() => undefined),
+      catchError(err => throwError(() => err))
+    );
+  }
 
-     inserir(funcionario: Funcionario): void {
-        const clientes = this.listarTodos();
-        clientes.push(funcionario);
-        localStorage.setItem(LS_CHAVE, JSON.stringify(clientes));
-      }
+  buscarPorId(dataNascimento: string): Observable<Funcionario | null> {
+    return this.http.get<Funcionario>(
+      `${this.BASE_URL}/funcionarios/${dataNascimento}`,
+      this.httpOptions
+    ).pipe(
+      map((resp: HttpResponse<Funcionario>) => resp.status === 200 ? resp.body : null),
+      catchError(err => err.status === 404 ? of(null) : throwError(() => err))
+    );
+  }
 
-      remover(email: string): void {
-        let lista = this.listarTodos();
-        lista = lista.filter(f => f.email !== email);
-        localStorage.setItem(LS_CHAVE, JSON.stringify(lista));
-      }
-
-      atualizar(emailAntigo: string, funcAtualizado: Funcionario): void {
-        const lista = this.listarTodos();
-        const idx = lista.findIndex(f => f.email === emailAntigo);
-        if (idx !== -1) {
-          lista[idx] = funcAtualizado;
-          localStorage.setItem(LS_CHAVE, JSON.stringify(lista));
-        }
-      }
+  atualizar(func: Funcionario): Observable<Funcionario | null> {
+    return this.http.put<Funcionario>(
+      `${this.BASE_URL}/funcionarios/${func.dataNascimento}`,
+      JSON.stringify(func),
+      this.httpOptions
+    ).pipe(
+      map((resp: HttpResponse<Funcionario>) => resp.status === 200 ? resp.body : null),
+      catchError(err => throwError(() => err))
+    );
+  }
 }

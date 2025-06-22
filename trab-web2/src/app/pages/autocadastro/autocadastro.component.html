@@ -83,7 +83,8 @@
           name="cep"
           required
           mask="00000-000"
-          #cepModel="ngModel">
+          #cepModel="ngModel"
+          (blur)="onCepBlur()">
         <div *ngIf="cepModel.invalid && (cepModel.dirty || cepModel.touched)" class="text-danger">
           CEP no formato inválido. Utilize: 00000-000.
         </div>
@@ -181,6 +182,8 @@
       </div>
     </div>
     
-    <button type="submit" class="btn btn-primary" [disabled]="formCadastro.invalid">Cadastrar</button>
+    <button type="submit" class="btn btn-primary" [disabled]="formCadastro.invalid">
+      Cadastrar
+    </button>
   </form>
 </div>
