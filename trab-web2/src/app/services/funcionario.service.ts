@@ -19,8 +19,8 @@ export class FuncionarioService {
 
   private funcionarios: Funcionario[] = []; 
   private dataNascimento: string =''
-  public idLogado: string = '';
-   private _dataNascimentoLogado = '';
+ private _dataNascimentoLogado = localStorage.getItem('dataNascimentoLogado') || '';
+   public idLogado = this._dataNascimentoLogado;
   set dataNascimentoLogado(dn: string) { this._dataNascimentoLogado = dn; }
   get dataNascimentoLogado(): string { return this._dataNascimentoLogado; }
 
@@ -37,6 +37,13 @@ export class FuncionarioService {
       catchError(err => err.status === 404 ? of([]) : throwError(() => err))
     );
   }
+
+    logout(): void {
+    this._dataNascimentoLogado = '';
+    this.idLogado = '';
+    localStorage.removeItem('dataNascimentoLogado');
+  }
+
   
  getFuncionarios(email: string, senha: string): Observable<Funcionario | null> {
     const body = { login: email, senha };

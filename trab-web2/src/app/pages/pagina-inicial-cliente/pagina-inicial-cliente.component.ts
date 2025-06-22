@@ -68,7 +68,6 @@ resgatarServico(s: Solicitacao): void {
   this.solicitacaoService
     .resgatarSolicitacao(
       dataHora,                          // 1) dataHora
-      this.clienteService.cpfLogado,     // 2) funcionarioId (ou aqui o id do cliente, conforme seu back espera)
       s.observacoesOrcamento || ''       // 3) observações
     )
     .subscribe({

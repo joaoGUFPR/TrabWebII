@@ -109,12 +109,11 @@ listarSolicitacoesPorCpf(cpf: string): Observable<Solicitacao[]> {
 
   resgatarSolicitacao(
     dataHora: string,
-    funcionarioId: string,
     observacoes: string
   ): Observable<Solicitacao | null> {
     return this.http.post<Solicitacao>(
       `${this.BASE}/${encodeURIComponent(dataHora)}/resgatar`,
-      JSON.stringify({ funcionarioId, observacoes }),
+      JSON.stringify({ observacoes }),
       this.httpOpts
     ).pipe(
       map(r => r.status === 200 ? r.body : null),

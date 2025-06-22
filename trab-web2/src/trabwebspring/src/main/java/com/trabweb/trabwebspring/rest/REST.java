@@ -239,7 +239,7 @@ public ResponseEntity<Solicitacao> registrarOrcamento(
 
                 logHistorico(
                     salvo,
-                    "Orçamento Registrado",
+                    "Orçada",
                     funcionarioId,
                     (String) dto.get("observacoes")
                 );
@@ -368,14 +368,13 @@ public ResponseEntity<Solicitacao> resgatarServico(
             // atualiza estado para Resgatada
             s.setEstado("Aprovada");
             // opcional: registra quem foi o funcionário que entregou 
-            s.setIdFuncionario(dto.get("funcionarioId"));
             s.setDataHoraFinalizada(Instant.now().toString());
             Solicitacao salvo = solicitacaoRepo.save(s);
 
             // registra no histórico
             logHistorico(
                 salvo,
-                "Resgatada",
+                "Aprovada",
                 dto.get("funcionarioId"),
                 dto.getOrDefault("observacoes", null)
             );

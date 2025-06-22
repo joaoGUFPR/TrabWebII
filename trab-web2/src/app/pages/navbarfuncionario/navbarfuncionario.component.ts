@@ -11,12 +11,14 @@ import { FuncionarioService } from '../../services/funcionario.service';
   templateUrl: './navbarfuncionario.component.html',
   styleUrl: './navbarfuncionario.component.css'
 })
-export class NavbarFuncionarioComponent implements OnInit {
-  tipo: string = '';
+export class NavbarFuncionarioComponent {
+  constructor(
+    private router: Router,
+    private funcService: FuncionarioService
+  ) {}
 
-  constructor(private funcionarioService: FuncionarioService) {}
-
-  ngOnInit() {
-    
+  onLogout(): void {
+    this.funcService.logout();
+    this.router.navigate(['/login']);
   }
 }

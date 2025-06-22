@@ -20,6 +20,9 @@ export class VisualisarservicoComponent implements OnInit {
   historico: Historicosolicitacao[] = [];
   nomeFuncionario = '—';
 
+  private funcionarioMap = new Map<string,string>();
+
+
   constructor(
     private route: ActivatedRoute,
     private solicitacaoService: SolicitacaoService,
@@ -27,6 +30,15 @@ export class VisualisarservicoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+
+
+        this.funcionarioService.listarTodos().subscribe({
+      next: funcionarios => {
+        funcionarios.forEach(f => this.funcionarioMap.set(f.dataNascimento, f.nome));
+      },
+      error: err => console.error('Erro ao carregar funcionários', err)
+    });
+
     this.route.paramMap.subscribe((params: ParamMap) => {
       const dataHora = params.get('dataHora');
       if (!dataHora) return;
@@ -72,7 +84,6 @@ export class VisualisarservicoComponent implements OnInit {
   if (!this.solicitacao) return;
   this.solicitacaoService.resgatarSolicitacao(
     this.solicitacao.dataHora!,
-    this.funcionarioService.idLogado,
     '' // alguma observação, se for o caso
   ).subscribe({
     next: updated => {
@@ -83,5 +94,10 @@ export class VisualisarservicoComponent implements OnInit {
     },
     error: err => console.error('Erro ao resgatar solicitação', err)
   });
+
 }
+
+  getNomeFuncionario(id: string): string {
+    return this.funcionarioMap.get(id) || id;
+  }
 }

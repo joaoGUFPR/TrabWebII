@@ -7,6 +7,7 @@ import { Solicitacao } from '../../shared/models/solicitacao';
 import { Historicosolicitacao } from '../../shared/models/historicosolicitacao';
 import { SolicitacaoService } from '../../services/soliciticao.service';
 import { NavbarComponent }    from '../navbar/navbar.component';
+import { FuncionarioService } from '../../services/funcionario.service';
 
 @Component({
   selector: 'app-mostrar-orcamento',
@@ -26,7 +27,8 @@ export class MostrarOrcamentoComponent implements OnInit {
   constructor(
     private solicitacaoService: SolicitacaoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private funcSvc: FuncionarioService
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +57,7 @@ aprovarServico(): void {
   this.solicitacaoService
     .aprovarSolicitacao(
       dh,
-      this.solicitacao.idFuncionario,
+      this.funcSvc.idLogado,
       this.solicitacao.observacoesOrcamento || ''
     )
     .subscribe({
@@ -75,7 +77,7 @@ rejeitarServico(): void {
   this.solicitacaoService
     .rejeitarSolicitacao(
       dh,
-      this.solicitacao.idFuncionario,
+      this.funcSvc.idLogado,
       this.solicitacao.observacoesOrcamento || ''
     )
     .subscribe({

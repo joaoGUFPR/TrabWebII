@@ -93,7 +93,7 @@ export class EfetuarOrcamentoComponent implements OnInit {
     }
 
     const { valor, observacoes } = this.form.value;
-    const funcionarioId = this.funcSvc.dataNascimentoLogado;
+    const funcionarioId = this.funcSvc.idLogado;
 
     // Prepara atualização
     this.solicitacao.valorOrcamento       = valor;

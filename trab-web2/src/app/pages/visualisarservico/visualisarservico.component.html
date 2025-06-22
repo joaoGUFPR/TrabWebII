@@ -13,7 +13,7 @@
         <strong>Orçamento:</strong> {{ solicitacao.valorOrcamento | currency:'BRL':'symbol' }}
       </p>
       <p *ngIf="solicitacao.idFuncionario">
-        <strong>Funcionário:</strong> {{ nomeFuncionario }}
+        <strong>Funcionário:</strong> {{  getNomeFuncionario(solicitacao.idFuncionario)}}
       </p>
     </div>
   </div>
@@ -21,32 +21,41 @@
   <h4 class="mb-3">Histórico de Atualizações</h4>
   <ul class="list-group mb-4">
     <li class="list-group-item" *ngFor="let h of historico">
-      {{ h.dataHora | date:'dd/MM/yyyy HH:mm' }} –
-      <span
-        class="badge"
-        [ngClass]="{
-          'bg-secondary': h.estado === 'Aberta',
-          'bg-info':      h.estado === 'Orcada',
-          'bg-warning':   h.estado === 'Aprovada',
-          'bg-danger':    h.estado === 'Rejeitada',
-          'bg-dark':      h.estado === 'Removida',
-          'bg-primary':   h.estado === 'Arrumada',
-          'bg-success':   h.estado === 'Finalizada',
-          'bg-success text-dark': h.estado === 'Paga'
-        }"
-      >
-        {{ h.estado }}
-      </span>
-      <div *ngIf="h.funcionarioId" class="ms-2 text-muted">
-        (por {{ h.funcionarioId }})
-      </div>
-      <div *ngIf="h.observacao" class="mt-1"><em>{{ h.observacao }}</em></div>
-    </li>
+  {{ h.dataHora | date:'dd/MM/yyyy HH:mm' }} –
+  <span
+    class="badge"
+    [ngStyle]="{
+      'background-color': h.estado === 'Aberta'         ? 'gray'   :
+                          h.estado === 'Orçada'        ? 'brown'  :
+                          h.estado === 'Rejeitada'     ? 'red'    :
+                          h.estado === 'Aprovada'      ? 'yellow' :
+                          h.estado === 'Redirecionada' ? 'purple' :
+                          h.estado === 'Arrumada'      ? 'blue'   :
+                          h.estado === 'Paga'          ? 'orange' :
+                          h.estado === 'Finalizada'    ? 'green'  :
+                          '#000',
+      'color': (h.estado === 'Orçada'
+                || h.estado === 'Rejeitada'
+                || h.estado === 'Redirecionada'
+                || h.estado === 'Arrumada'
+                || h.estado === 'Finalizada')
+               ? '#fff'
+               : '#000'
+    }"
+  >
+    {{ h.estado }}
+  </span>
+
+  <div *ngIf="h.funcionarioId" class="ms-2 text-muted">
+    (funcionario: {{ getNomeFuncionario(h.funcionarioId) }})
+  </div>
+  <div *ngIf="h.observacao" class="mt-1"><em>{{ h.observacao }}</em></div>
+</li>
   </ul>
 
   <div class="d-flex gap-2">
     <button
-      *ngIf="solicitacao.estado === 'Orcada'"
+      *ngIf="solicitacao.estado === 'Orçada'"
       class="btn btn-primary"
       [routerLink]="['/mostrar-orcamento', solicitacao.dataHora]">
       Ver Orçamento

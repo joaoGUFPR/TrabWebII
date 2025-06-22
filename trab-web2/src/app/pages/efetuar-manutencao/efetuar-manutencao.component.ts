@@ -95,7 +95,7 @@ export class EfetuarManutencaoComponent implements OnInit {
     const dto = {
       descricaoManutencao: this.descricaoManutencao,
       orientacaoCliente: this.orientacoesCliente,
-      funcionarioId: this.solicitacao.idFuncionario!
+      funcionarioId: this.funcSvc.idLogado
     };
 
     this.solicitacaoSvc.efetuarManutencao(

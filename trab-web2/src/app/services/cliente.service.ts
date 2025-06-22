@@ -17,12 +17,20 @@ export class ClienteService {
     })
   };
 
-  private _cpfLogado = '';
-  set cpfLogado(cpf: string) { this._cpfLogado = cpf; }
+  private _cpfLogado = localStorage.getItem('cpfLogado') || '';
   get cpfLogado(): string { return this._cpfLogado; }
+  set cpfLogado(cpf: string) {
+    this._cpfLogado = cpf;
+    localStorage.setItem('cpfLogado', cpf);
+  }
 
   constructor(private http: HttpClient) {}
 
+    logout(): void {
+    this._cpfLogado = '';
+    localStorage.removeItem('cpfLogado');
+  }
+  
   /** GET /clientes **/
   listarTodos(): Observable<Cliente[]> {
     return this.http.get<Cliente[]>(

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterModule } from '@angular/router';
+import { Router, RouterLink, RouterModule } from '@angular/router';
 import { ClienteService } from '../../services/cliente.service';
 
 @Component({
@@ -10,11 +10,19 @@ import { ClienteService } from '../../services/cliente.service';
   styleUrl: './navbar.component.css'
 })
 export class NavbarComponent implements OnInit {
-  cpf: string = '';
+  cpf = '';
 
-  constructor(private clienteService: ClienteService) {}
+  constructor(
+    private router: Router,
+    private clienteService: ClienteService
+  ) {}
 
   ngOnInit() {
     this.cpf = this.clienteService.cpfLogado;
+  }
+
+  onLogout(): void {
+    this.clienteService.logout();
+    this.router.navigate(['/login']);
   }
 }
