@@ -84,4 +84,5 @@ export class SolicitaManutencaoComponent implements OnInit {
     console.log('Solicitação adicionada: ', novaSolicitacao);
     this.router.navigate(['/paginainicialcliente']);
   }
+
 }

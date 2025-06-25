@@ -3,7 +3,7 @@
   <h2 class="mb-4">CRUD de Funcionários</h2>
 
   <!-- Inserir -->
-  <form (ngSubmit)="inserir()" #formInsercao="ngForm" class="mb-4">
+  <form (ngSubmit)="inserir(formInsercao)" #formInsercao="ngForm" class="mb-4">
     <h4>Adicionar Funcionário</h4>
 
     <div class="mb-3">
@@ -81,6 +81,7 @@
     <select
       class="form-control"
       [(ngModel)]="funcionarioSelecionado"
+      (ngModelChange)="selecionar($event)"
       name="funcionarioSelecionado"
     >
       <option [ngValue]="null">Selecione...</option>
@@ -99,7 +100,13 @@
 
     <div *ngIf="!exibirFormAtualizacao && !exibirConfirmacaoRemocao" class="mb-3">
       <button class="btn btn-warning me-2" (click)="abrirAtualizacao()">Atualizar</button>
-      <button class="btn btn-danger" (click)="abrirRemocao()">Remover</button>
+      <button class="btn btn-danger"
+       (click)="abrirRemocao()"
+       [disabled]="!podeRemover"
+        title="{{ !podeRemover ? (funcionarios.length <= 1 ? 'Não é possível remover o único funcionário' : 'Você não pode remover a si mesmo') : '' }}"
+       >
+       Remover
+      </button>
     </div>
 
     <!-- Form Atualização COMPLETO -->
@@ -112,7 +119,7 @@
           id="emailAtualizado"
           name="emailAtualizado"
           class="form-control"
-          [(ngModel)]="funcionarioSelecionado.email"
+          [(ngModel)]="funcionarioParaEdicao.email"
           required
           #emailUpd="ngModel"
         >
@@ -129,7 +136,7 @@
           id="nomeAtualizado"
           name="nomeAtualizado"
           class="form-control"
-          [(ngModel)]="funcionarioSelecionado.nome"
+          [(ngModel)]="funcionarioParaEdicao.nome"
           required
           #nomeUpd="ngModel"
         >
@@ -146,7 +153,7 @@
           id="dataNascimentoAtualizado"
           name="dataNascimentoAtualizado"
           class="form-control"
-          [(ngModel)]="funcionarioSelecionado.dataNascimento"
+          [(ngModel)]="funcionarioParaEdicao.dataNascimento"
           required
           #dnUpd="ngModel"
         >
@@ -163,7 +170,7 @@
           id="senhaAtualizado"
           name="senhaAtualizado"
           class="form-control"
-          [(ngModel)]="funcionarioSelecionado.senha"
+          [(ngModel)]="funcionarioParaEdicao.senha"
           required
           #senhaUpd="ngModel"
         >
@@ -181,7 +188,13 @@
     <!-- Confirmação Remoção -->
     <div *ngIf="exibirConfirmacaoRemocao" class="alert alert-danger">
       <p>Remover "<strong>{{ funcionarioSelecionado.nome }}</strong>"?</p>
-      <button class="btn btn-danger me-2" (click)="remover()">Sim, remover</button>
+      <button
+        class="btn btn-danger me-2"
+        (click)="remover()"
+        [disabled]="!podeRemover"
+      >
+        Sim, remover
+      </button>
       <button class="btn btn-secondary" (click)="novo()">Cancelar</button>
     </div>
   </div>

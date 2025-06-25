@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule }   from '@angular/forms';
+import { FormsModule, NgForm }   from '@angular/forms';
 import { NavbarFuncionarioComponent } from '../navbarfuncionario/navbarfuncionario.component';
 import { Funcionario }           from '../../shared/models/funcionario';
 import { FuncionarioService }    from '../../services/funcionario.service';
@@ -18,6 +18,8 @@ export class CadastrofuncionarioComponent implements OnInit {
   funcionario: Funcionario          = new Funcionario('', '', '', '', 'funcionario');
   exibirFormAtualizacao            = false;
   exibirConfirmacaoRemocao         = false;
+  funcionarioParaEdicao: Funcionario = new Funcionario('', '', '', '', 'funcionario');
+
 
   constructor(private funcionarioService: FuncionarioService) {}
 
@@ -33,12 +35,13 @@ export class CadastrofuncionarioComponent implements OnInit {
       );
   }
 
-  inserir(): void {
+  inserir(form: NgForm): void {
     // dataNascimento já está em "YYYY-MM-DD" pelo <input type="date">
     this.funcionarioService.inserir(this.funcionario).subscribe({
       next: res => {
         if (res) {
           alert('Funcionário cadastrado com sucesso!');
+          form.resetForm(); 
           this.novo();
           this.refreshList();
         }
@@ -48,7 +51,9 @@ export class CadastrofuncionarioComponent implements OnInit {
   }
 
   selecionar(f: Funcionario): void {
-    this.funcionarioSelecionado = { ...f };
+    this.funcionarioSelecionado = f;
+    // clonamos para edição
+    this.funcionarioParaEdicao = { ...f };
     this.exibirFormAtualizacao = false;
     this.exibirConfirmacaoRemocao = false;
   }
@@ -61,7 +66,7 @@ export class CadastrofuncionarioComponent implements OnInit {
 
   atualizar(): void {
     if (!this.funcionarioSelecionado) return;
-    this.funcionarioService.atualizar(this.funcionarioSelecionado).subscribe({
+    this.funcionarioService.atualizar(this.funcionarioParaEdicao).subscribe({
       next: res => {
         if (res) {
           alert('Funcionário atualizado com sucesso!');
@@ -79,6 +84,13 @@ export class CadastrofuncionarioComponent implements OnInit {
 
   remover(): void {
     if (!this.funcionarioSelecionado) return;
+
+    if (!this.podeRemover) {
+    alert('Você não pode remover este funcionário.');
+    this.novo();
+    return;
+  }
+
     this.funcionarioService.remover(this.funcionarioSelecionado.dataNascimento)
       .subscribe({
         next: () => {
@@ -96,4 +108,20 @@ export class CadastrofuncionarioComponent implements OnInit {
     this.exibirFormAtualizacao    = false;
     this.exibirConfirmacaoRemocao = false;
   }
+
+get podeRemover(): boolean {
+  if (!this.funcionarioSelecionado) return false;
+
+  const logado = this.funcionarioService.idLogado
+  const selecionado = this.funcionarioSelecionado.dataNascimento;
+
+  console.log('>> comparar remoção:', {
+    totalFuncionarios: this.funcionarios.length,
+    logado,
+    selecionado
+  });
+
+  return this.funcionarios.length > 1
+      && selecionado !== logado;
+}
 }

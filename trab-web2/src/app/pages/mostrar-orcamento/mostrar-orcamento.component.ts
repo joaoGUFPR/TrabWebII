@@ -62,7 +62,7 @@ aprovarServico(): void {
     )
     .subscribe({
       next: () => {
-        alert('Serviço aprovado!');
+        alert(`Serviço Aprovado no Valor R$ ${this.solicitacao.valorOrcamento}`);
         this.router.navigate(['/paginainicialcliente']);
       },
       error: err => {

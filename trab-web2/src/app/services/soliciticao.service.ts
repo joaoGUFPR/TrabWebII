@@ -63,11 +63,28 @@ listarSolicitacoesPorCpf(cpf: string): Observable<Solicitacao[]> {
     );
   }
 
-  adicionarSolicitacao(solicitacao: Solicitacao): void {
-    // dispara o POST mas não espera retorno
-    this.http.post<Solicitacao>(this.BASE, JSON.stringify(solicitacao), this.httpOpts)
-      .subscribe({ next: () => {}, error: () => {} });
-  }
+adicionarSolicitacao(solicitacao: Solicitacao): void {
+  // monta o payload injetando o id do funcionário logado
+  const payload: Solicitacao = {
+    ...solicitacao,
+    idFuncionario: this.funcionarioService.idLogado
+  };
+
+  this.http
+    .post<Solicitacao>(
+      this.BASE,
+      JSON.stringify(payload),
+      this.httpOpts
+    )
+    .subscribe({
+      next: () => {
+        // opcional: aqui você poderia emitir um evento, exibir toast, etc.
+      },
+      error: err => {
+        console.error('Falha ao criar solicitação:', err);
+      }
+    });
+}
 
   buscarSolicitacaoPorDataHora(dataHora: string): Observable<Solicitacao | null> {
     return this.http.get<Solicitacao>(`${this.BASE}/${dataHora}`, this.httpOpts).pipe(

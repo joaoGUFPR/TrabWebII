@@ -8,8 +8,10 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,6 +35,8 @@ import com.trabweb.trabwebspring.repository.EquipamentoRepository;
 import com.trabweb.trabwebspring.repository.FuncionarioRepository;
 import com.trabweb.trabwebspring.repository.HistoricosolicitacaoRepository;
 import com.trabweb.trabwebspring.repository.SolicitacaoRepository;
+import com.trabweb.trabwebspring.service.EmailService;
+
 
 @CrossOrigin(
     origins = "http://localhost:4200",
@@ -52,7 +56,10 @@ public class REST {
     private final EquipamentoRepository equipamentoRepo;
     private final SolicitacaoRepository solicitacaoRepo;
      private final HistoricosolicitacaoRepository histRepo;
+     
 
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     public REST(ClienteRepository clienteRepo, FuncionarioRepository funcRepo, EquipamentoRepository equipamentoRepo, SolicitacaoRepository solicitacaoRepo, HistoricosolicitacaoRepository histRepo) {
@@ -62,6 +69,9 @@ public class REST {
         this.solicitacaoRepo = solicitacaoRepo;
         this.histRepo = histRepo;
     }
+
+
+    
 
         // Helper para registrar histórico
 private void logHistorico(
@@ -110,13 +120,23 @@ private void logHistorico(
         return ResponseEntity.status(401).build();
     }
 
-    @PostMapping("/clientes")
-        public ResponseEntity<Cliente> criarCliente(@RequestBody Cliente novo) {
+@PostMapping("/clientes")
+    public ResponseEntity<Cliente> criarCliente(@RequestBody Cliente novo) {
+        // 1) verifica CPF único
         if (clienteRepo.findByCpf(novo.getCpf()).isPresent()) {
-            // já existe CPF cadastrado
             return ResponseEntity.badRequest().build();
         }
+        // 2) verifica e-mail único
+        if (clienteRepo.findByEmail(novo.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        // 3) gera senha aleatória de 4 dígitos
+        String senhaGerada = String.format("%04d", new Random().nextInt(10000));
+        novo.setSenha(senhaGerada);
+        // 4) salva todos os dados (incluindo endereço completo)
         Cliente salvo = clienteRepo.save(novo);
+        // 5) envia e-mail com a senha
+        emailService.sendAutoCadastroPassword(salvo.getEmail(), senhaGerada);
         return ResponseEntity.ok(salvo);
     }
 
