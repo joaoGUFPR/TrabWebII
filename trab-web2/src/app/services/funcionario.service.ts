@@ -19,14 +19,19 @@ export class FuncionarioService {
 
   private funcionarios: Funcionario[] = []; 
   private dataNascimento: string =''
- private _dataNascimentoLogado = localStorage.getItem('dataNascimentoLogado') || '';
-   public idLogado = this._dataNascimentoLogado;
-  set dataNascimentoLogado(dn: string) { this._dataNascimentoLogado = dn; }
-  get dataNascimentoLogado(): string { return this._dataNascimentoLogado; }
+ private _idLogado = localStorage.getItem('idLogado') || '';
+  set idLogado(value: string) {
+    this._idLogado = value;
+    localStorage.setItem('idLogado', value);
+  }
+  get idLogado(): string {
+    return this._idLogado;
+  }
 
   constructor(private http: HttpClient) { }
 
 
+  
 
   listarTodos(): Observable<Funcionario[]> {
     return this.http.get<Funcionario[]>(
@@ -39,9 +44,8 @@ export class FuncionarioService {
   }
 
     logout(): void {
-    this._dataNascimentoLogado = '';
-    this.idLogado = '';
-    localStorage.removeItem('dataNascimentoLogado');
+    this._idLogado = '';
+    localStorage.removeItem('idLogado');
   }
 
   

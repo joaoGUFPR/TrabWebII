@@ -11,6 +11,7 @@ import { ClienteService } from '../../services/cliente.service';
 })
 export class NavbarComponent implements OnInit {
   cpf = '';
+  menuOpen = false;
 
   constructor(
     private router: Router,
@@ -22,6 +23,7 @@ export class NavbarComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.menuOpen = false;
     this.clienteService.logout();
     this.router.navigate(['/login']);
   }

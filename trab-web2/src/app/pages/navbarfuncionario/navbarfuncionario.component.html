@@ -1,36 +1,37 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-      <a class="navbar-brand">Funcionário</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-              data-bs-target="#navbarFuncionario" aria-controls="navbarFuncionario"
-              aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-  
-      <div class="collapse navbar-collapse" id="navbarFuncionario">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <!-- RF011: Página Inicial de Funcionário -->
-          <li class="nav-item">
-            <a class="nav-link" id="rf011-link" [routerLink]="['/paginainicialfuncionario']">Página Inicial</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="rf012-link" [routerLink]="['/visualizarsolicitacao']">Solicitação</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="rf012-link" [routerLink]="['/cadastrofuncionario']">Cadastrar Funcionário</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="rf012-link" [routerLink]="['/cadastrarequipamento']">Cadastrar Equipamento</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="rf012-link" [routerLink]="['/relatorioreceita']">Relatorio Receita</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="rf012-link" [routerLink]="['/login']" (click)="onLogout()">Sair</a>
-          </li>
-  
+  <div class="container-fluid">
+    <a class="navbar-brand">Funcionário</a>
 
-        </ul>
-      </div>
+    <!-- botão “hamburger” -->
+    <button class="navbar-toggler" type="button"
+            (click)="menuOpen = !menuOpen"
+            [attr.aria-expanded]="menuOpen"
+            aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- collapse controlado pelo Angular + responsivo Bootstrap -->
+    <div class="collapse navbar-collapse" [class.show]="menuOpen">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/paginainicialfuncionario">Página Inicial</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/visualizarsolicitacao">Solicitação</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/cadastrofuncionario">Cadastrar Funcionário</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/cadastrarequipamento">Cadastrar Equipamento</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/relatorioreceita">Relatório Receita</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" (click)="onLogout()" routerLink="/login">Sair</a>
+        </li>
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>

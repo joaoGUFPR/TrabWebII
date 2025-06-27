@@ -12,12 +12,14 @@ import { FuncionarioService } from '../../services/funcionario.service';
   styleUrl: './navbarfuncionario.component.css'
 })
 export class NavbarFuncionarioComponent {
+  menuOpen = false;
   constructor(
     private router: Router,
     private funcService: FuncionarioService
   ) {}
 
   onLogout(): void {
+    this.menuOpen = false;  
     this.funcService.logout();
     this.router.navigate(['/login']);
   }

@@ -36,6 +36,7 @@ export class PaginaInicialFuncionarioComponent implements OnInit {
   ngOnInit(): void {
     this.carregando = true;
     this.erro       = undefined;
+    console.log(this.funcionarioService.idLogado)
 
     // 1) carrega todos os clientes UMA vez e popula o map
     this.clienteService.listarTodos().subscribe({

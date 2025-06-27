@@ -47,6 +47,7 @@ export class LoginComponent {
           if (user.tipo === 'funcionario') {
             // rota de funcionário
             this.funcionarioService.idLogado = user.extra;
+            console.log(this.funcionarioService.idLogado)
             this.router.navigate(['/paginainicialfuncionario']);
           } else {
             // rota de cliente
